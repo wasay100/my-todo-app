@@ -1,0 +1,411 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .task-container {
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            box-shadow: 20px 20px 60px #bebebe, -20px -20px 60px #ffffff;
+        }
+        .task-item {
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            transition: all 0.3s ease;
+        }
+        .task-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        .add-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            transition: all 0.3s ease;
+        }
+        .add-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .download-btn {
+            background: linear-gradient(45deg, #56ab2f, #a8e6cf);
+            transition: all 0.3s ease;
+        }
+        .download-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(86, 171, 47, 0.4);
+        }
+        .delete-btn {
+            transition: all 0.3s ease;
+        }
+        .delete-btn:hover {
+            transform: scale(1.1);
+        }
+        .title {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="task-container p-8 rounded-2xl w-full max-w-md">
+        <h1 class="title text-3xl font-bold mb-6 text-center">✨ My To-Do List ✨</h1>
+        <div class="space-y-4 mb-6">
+            <div class="flex">
+                <input type="text" id="taskInput" class="flex-1 p-3 border-2 border-purple-200 rounded-l-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent" placeholder="✍️ Enter a new task...">
+                <button onclick="addTask()" class="add-btn text-white px-6 py-3 rounded-r-xl font-semibold">
+                    ➕ Add
+                </button>
+            </div>
+            <button onclick="downloadTasks()" class="download-btn text-white px-6 py-3 rounded-xl font-semibold w-full">
+                📥 Download Tasks
+            </button>
+        </div>
+        <ul id="taskList" class="space-y-2"></ul>
+    </div>
+
+    <script>
+        // Load tasks from the API when the page loads
+        document.addEventListener('DOMContentLoaded', loadTasks);
+
+        function addTask() {
+            const taskInput = document.getElementById('taskInput');
+            const taskText = taskInput.value.trim();
+
+            if (taskText === '') {
+                alert('Please enter a task!');
+                return;
+            }
+
+            const task = {
+                id: Date.now(),
+                text: taskText,
+                completed: false
+            };
+
+            // Add task to localStorage
+            saveTask(task);
+
+            // Render the task
+            renderTask(task);
+
+            // Clear input
+            taskInput.value = '';
+        }
+
+        function downloadTasks() {
+            const tasks = getTasks();
+            let txtContent = "My To-Do List\n";
+            txtContent += "=".repeat(20) + "\n\n";
+            
+            if (tasks.length === 0) {
+                txtContent += "No tasks found.\n";
+            } else {
+                tasks.forEach((task, index) => {
+                    const status = task.completed ? "✅" : "⏳";
+                    txtContent += `${index + 1}. ${status} ${task.text}\n`;
+                });
+                
+                txtContent += "\n" + "=".repeat(20) + "\n";
+                txtContent += `Total tasks: ${tasks.length}\n`;
+                txtContent += `Completed: ${tasks.filter(t => t.completed).length}\n`;
+                txtContent += `Pending: ${tasks.filter(t => !t.completed).length}\n`;
+            }
+            
+            const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(txtContent);
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute('href', dataStr);
+            downloadAnchor.setAttribute('download', 'my-tasks.txt');
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function saveTask(task) {
+            let tasks = getTasks();
+            tasks.push(task);
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+        }
+
+        function getTasks() {
+            return JSON.parse(localStorage.getItem('tasks')) || [];
+        }
+
+        function loadTasks() {
+            const tasks = getTasks();
+            tasks.forEach(task => renderTask(task));
+        }
+
+        function renderTask(task) {
+            const taskList = document.getElementById('taskList');
+            const li = document.createElement('li');
+            li.className = 'task-item flex items-center justify-between p-4 rounded-xl border-l-4 border-purple-400';
+            li.dataset.id = task.id;
+
+            li.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id})" class="h-5 w-5 text-purple-500 rounded focus:ring-purple-400">
+                    <span class="${task.completed ? 'line-through text-gray-500' : 'text-gray-800'} font-medium">${task.completed ? '✅' : '⏳'} ${task.text}</span>
+                </div>
+                <button onclick="deleteTask(${task.id})" class="delete-btn text-red-500 hover:text-red-700 px-3 py-1 rounded-lg hover:bg-red-50 font-semibold">
+                    🗑️ Delete
+                </button>
+            `;
+
+            taskList.appendChild(li);
+        }
+
+        function toggleTask(id) {
+            let tasks = getTasks();
+            tasks = tasks.map(task => {
+                if (task.id === id) {
+                    task.completed = !task.completed;
+                }
+                return task;
+            });
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            refreshTaskList();
+        }
+
+        function deleteTask(id) {
+            let tasks = getTasks();
+            tasks = tasks.filter(task => task.id !== id);
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            refreshTaskList();
+        }
+
+        function refreshTaskList() {
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = '';
+            loadTasks();
+        }
+    </script>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .task-container {
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            box-shadow: 20px 20px 60px #bebebe, -20px -20px 60px #ffffff;
+        }
+        .task-item {
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            transition: all 0.3s ease;
+        }
+        .task-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        .add-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            transition: all 0.3s ease;
+        }
+        .add-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .download-btn {
+            background: linear-gradient(45deg, #56ab2f, #a8e6cf);
+            transition: all 0.3s ease;
+        }
+        .download-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(86, 171, 47, 0.4);
+        }
+        .delete-btn {
+            transition: all 0.3s ease;
+        }
+        .delete-btn:hover {
+            transform: scale(1.1);
+        }
+        .title {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="task-container p-8 rounded-2xl w-full max-w-md">
+        <h1 class="title text-3xl font-bold mb-6 text-center">✨ My To-Do List ✨</h1>
+        <div class="space-y-4 mb-6">
+            <div class="flex">
+                <input type="text" id="taskInput" class="flex-1 p-3 border-2 border-purple-200 rounded-l-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent" placeholder="✍️ Enter a new task...">
+                <button onclick="addTask()" class="add-btn text-white px-6 py-3 rounded-r-xl font-semibold">
+                    ➕ Add
+                </button>
+            </div>
+            <button onclick="downloadTasks()" class="download-btn text-white px-6 py-3 rounded-xl font-semibold w-full">
+                📥 Download Tasks
+            </button>
+        </div>
+        <ul id="taskList" class="space-y-2"></ul>
+    </div>
+
+    <script>
+        // Load tasks from the API when the page loads
+        document.addEventListener('DOMContentLoaded', loadTasks);
+
+        async function addTask() {
+            const taskInput = document.getElementById('taskInput');
+            const taskText = taskInput.value.trim();
+
+            if (taskText === '') {
+                alert('Please enter a task!');
+                return;
+            }
+
+            const response = await fetch('http://localhost:3000/tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: taskText, completed: false })
+            });
+
+            if (response.ok) {
+                const newTask = await response.json();
+                renderTask(newTask);
+                taskInput.value = '';
+            } else {
+                alert('Failed to add task!');
+            }
+        }
+
+        async function loadTasks() {
+            const response = await fetch('http://localhost:3000/tasks');
+            if (response.ok) {
+                const tasks = await response.json();
+                const taskList = document.getElementById('taskList');
+                taskList.innerHTML = '';
+                tasks.forEach(task => renderTask(task));
+            } else {
+                alert('Failed to load tasks!');
+            }
+        }
+
+        // async function toggleTask(id) {
+        //     const taskElement = document.querySelector(`[data-id="${id}"]`);
+        //     const checkbox = taskElement.querySelector('input[type="checkbox"]');
+        //     const span = taskElement.querySelector('span');
+        //     // const completed = !checkbox.checked;
+        //     const completed = checkbox.checked; // Use the actual checkbox state, don't invert it
+        //     const response = await fetch(`http://localhost:3000/tasks/${id}`, {
+        //         method: 'PUT',
+        //         headers: { 'Content-Type': 'application/json' },
+        //         body: JSON.stringify({ completed })
+        //     });
+
+        //     if (response.ok) {
+        //         checkbox.checked = !checkbox.checked;
+        //         span.className = completed ? 'line-through text-gray-500 font-medium' : 'text-gray-800 font-medium';
+        //         span.textContent = `${completed ? '✅' : '⏳'} ${span.textContent.replace(/✅|⏳/, '')}`;
+        //     } else {
+        //         alert('Failed to update task!');
+        //     }
+        // }
+
+                async function toggleTask(id) {
+            const taskElement = document.querySelector(`[data-id="${id}"]`);
+            const checkbox = taskElement.querySelector('input[type="checkbox"]');
+            const span = taskElement.querySelector('span');
+            const completed = checkbox.checked; // Use the actual checkbox state, don't invert it
+
+            const response = await fetch(`http://localhost:3000/tasks/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ completed })
+            });
+
+            if (response.ok) {
+                // Don't change the checkbox state - it's already correct
+                span.className = completed ? 'line-through text-gray-500 font-medium' : 'text-gray-800 font-medium';
+                span.textContent = `${completed ? '✅' : '⏳'} ${span.textContent.replace(/✅|⏳/, '').trim()}`;
+            } else {
+                // Revert checkbox to previous state if API call failed
+                checkbox.checked = !checkbox.checked;
+                alert('Failed to update task!');
+            }
+        }
+
+        async function deleteTask(id) {
+            const response = await fetch(`http://localhost:3000/tasks/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                const taskElement = document.querySelector(`[data-id="${id}"]`);
+                taskElement.remove();
+            } else {
+                alert('Failed to delete task!');
+            }
+        }
+
+        function renderTask(task) {
+            const taskList = document.getElementById('taskList');
+            const li = document.createElement('li');
+            li.className = 'task-item flex items-center justify-between p-4 rounded-xl border-l-4 border-purple-400';
+            li.dataset.id = task.id;
+
+            li.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id})" class="h-5 w-5 text-purple-500 rounded focus:ring-purple-400">
+                    <span class="${task.completed ? 'line-through text-gray-500' : 'text-gray-800'} font-medium">${task.completed ? '✅' : '⏳'} ${task.text}</span>
+                </div>
+                <button onclick="deleteTask(${task.id})" class="delete-btn text-red-500 hover:text-red-700 px-3 py-1 rounded-lg hover:bg-red-50 font-semibold">
+                    🗑️ Delete
+                </button>
+            `;
+
+            taskList.appendChild(li);
+        }
+
+        function downloadTasks() {
+            fetch('http://localhost:3000/tasks')
+                .then(response => response.json())
+                .then(tasks => {
+                    let txtContent = "My To-Do List\n";
+                    txtContent += "=".repeat(20) + "\n\n";
+                    
+                    if (tasks.length === 0) {
+                        txtContent += "No tasks found.\n";
+                    } else {
+                        tasks.forEach((task, index) => {
+                            const status = task.completed ? "✅" : "⏳";
+                            txtContent += `${index + 1}. ${status} ${task.text}\n`;
+                        });
+                        
+                        txtContent += "\n" + "=".repeat(20) + "\n";
+                        txtContent += `Total tasks: ${tasks.length}\n`;
+                        txtContent += `Completed: ${tasks.filter(t => t.completed).length}\n`;
+                        txtContent += `Pending: ${tasks.filter(t => !t.completed).length}\n`;
+                    }
+                    
+                    const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(txtContent);
+                    const downloadAnchor = document.createElement('a');
+                    downloadAnchor.setAttribute('href', dataStr);
+                    downloadAnchor.setAttribute('download', 'my-tasks.txt');
+                    document.body.appendChild(downloadAnchor);
+                    downloadAnchor.click();
+                    downloadAnchor.remove();
+                })
+                .catch(error => alert('Failed to download tasks!'));
+        }
+    </script>
+</body>
+</html>
